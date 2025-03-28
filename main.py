@@ -4,34 +4,20 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import Select
+import pandas as pd
 import time
 import os
 
 # Configure Selenium
 chrome_options = Options()
-chrome_options.add_argument("--headless")  # Run in background
-# Use relative path for portability
+chrome_options.add_argument("--headless")
 driver_path = os.path.join(os.getcwd(), "chromedriver-win64", "chromedriver.exe")
 service = Service(executable_path=driver_path)
 driver = webdriver.Chrome(service=service, options=chrome_options)
 
-def set_sorting_to_newest():
-    """Set the sorting dropdown to 'جدیدترین‌' (Newest)."""
-    try:
-        sort_select = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.CLASS_NAME, "sort-select"))
-        )
-        select = Select(sort_select)
-        select.select_by_value("0")  # '0' corresponds to 'جدیدترین‌'
-        time.sleep(2)  # Wait for page to reload with new sorting
-    except Exception as e:
-        print(f"Error setting sorting: {e}")
-
 def scrape_jobvision_page(url):
-    """Scrape job listings from a single page of jobvision.ir."""
+    """Scrape job listings from a given page URL."""
     driver.get(url)
-    set_sorting_to_newest()  # Apply sorting preference
     
     # Wait for job listings to load
     try:
@@ -39,8 +25,7 @@ def scrape_jobvision_page(url):
             EC.presence_of_element_located((By.TAG_NAME, "job-card"))
         )
     except Exception as e:
-        print(f"Error loading page: {e}")
-        driver.quit()
+        print(f"Error loading page {url}: {e}")
         return []
 
     # Extract job cards
@@ -49,16 +34,12 @@ def scrape_jobvision_page(url):
 
     for card in job_cards:
         try:
-            # Job title (may include gender like "آقا")
             title = card.find_element(By.CLASS_NAME, "job-card-title").text.strip()
             gender = "آقا" if "آقا" in title else "خانم" if "خانم" in title else "مشخص نشده"
             if gender != "مشخص نشده":
-                title = title.replace(f" - {gender}", "").strip()  # Clean title
+                title = title.replace(f" - {gender}", "").strip()
 
-            # Company name
             company = card.find_element(By.XPATH, ".//a[contains(@href, '/companies')]").text.strip()
-
-            # Location (region and address) and salary
             location_salary_div = card.find_element(By.CLASS_NAME, "text-secondary")
             location_parts = location_salary_div.text.split(" ، ")
             region = location_parts[0] if location_parts else ""
@@ -66,13 +47,8 @@ def scrape_jobvision_page(url):
             address = address_salary[0]
             salary = address_salary[1] if len(address_salary) > 1 else "نامشخص"
 
-            # Posting time
             time_posted = card.find_element(By.XPATH, ".//span[@style='color: #8E9CB2;']").text.strip()
-
-            # Status
             status = card.find_element(By.CLASS_NAME, "nudge").text.strip() if card.find_elements(By.CLASS_NAME, "nudge") else "نامشخص"
-
-            # Urgency
             urgent = "فوری" in card.text
 
             jobs.append({
@@ -89,19 +65,43 @@ def scrape_jobvision_page(url):
         except Exception as e:
             print(f"Error parsing job card: {e}")
             continue
-
     return jobs
 
+def scrape_all_pages(base_url, max_pages=3):
+    """Scrape all pages using URL parameters."""
+    all_jobs = []
+    page = 1
+
+    while True:
+        url = f"{base_url}?page={page}&sort=0"
+        print(f"Scraping page {page}: {url}")
+        jobs = scrape_jobvision_page(url)
+        
+        if not jobs:  # Stop if no jobs are found (end of pages)
+            print("No more jobs found.")
+            break
+        
+        all_jobs.extend(jobs)
+        print(f"Page {page} scraped: {len(jobs)} jobs (Total: {len(all_jobs)})")
+        
+        page += 1
+        if max_pages and page > max_pages:  # Respect max_pages limit
+            print(f"Stopped at {max_pages} pages as per limit.")
+            break
+        
+        time.sleep(1)  # Polite delay to avoid overwhelming the server
+
+    return all_jobs
+
 def main():
-    url = "https://jobvision.ir/jobs"
+    base_url = "https://jobvision.ir/jobs"
     print("Scraping job listings from jobvision.ir...")
-    job_listings = scrape_jobvision_page(url)
+    job_listings = scrape_all_pages(base_url, max_pages=3)  # Limit to 3 pages for testing
     
-    # Print results for now
-    for job in job_listings:
-        print(f"Title: {job['title']}, Gender: {job['gender']}, Company: {job['company']}, "
-              f"Region: {job['region']}, Address: {job['address']}, Salary: {job['salary']}, "
-              f"Time: {job['time_posted']}, Status: {job['status']}, Urgent: {job['urgent']}")
+    # Save to Pandas DataFrame and CSV
+    df = pd.DataFrame(job_listings)
+    df.to_csv("job_trends.csv", index=False, encoding="utf-8-sig")
+    print(f"Saved {len(job_listings)} jobs to job_trends.csv")
     
     driver.quit()
 
