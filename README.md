@@ -30,3 +30,38 @@ After testing, I finalized the scraper to work with my local setup (Windows, Chr
 
 ### Setup Note
 - Place `chromedriver-win64/chromedriver.exe` in the project folder or update the `driver_path` variable to your ChromeDriver location.
+
+## Implementation: Step 3 - Simplified URL-Based Scraper
+I discovered that `jobvision.ir/jobs?page={n}&sort=0` directly loads sorted pages, so I refactored the scraper to use URL parameters instead of UI interactions.
+
+### Why This Approach?
+- **Efficiency:** Leveraging URL patterns eliminates the need for button clicks or dropdowns, making the scraper faster and more reliable.
+- **Simplicity:** Fewer `Selenium` interactions reduce complexity and potential points of failure, a senior-level optimization.
+- **Scalability:** The script iterates through pages seamlessly, stopping when no more data is available.
+
+### How It Works
+1. Constructs URLs like `https://jobvision.ir/jobs?page=1&sort=0` for each page.
+2. Scrapes job cards using existing logic.
+3. Continues until no jobs are found or a `max_pages` limit is hit (default: 3).
+4. Saves all data to `job_trends.csv` with `Pandas`, using UTF-8-SIG for Persian text.
+
+This optimization highlights my ability to adapt and streamline solutions based on site behavior.
+
+## Implementation: Step 4 - Data Analysis with Pandas
+I added a data analysis layer using `Pandas` to extract insights from the scraped job listings, enhancing the project’s value.
+
+### Why This Approach?
+- **Insight Generation:** Analyzing trends (e.g., common job titles, regions) demonstrates my ability to turn raw data into actionable information—a critical skill for senior roles.
+- **Professional Output:** Saving a summary file alongside the CSV provides a polished deliverable for stakeholders.
+
+### How It Works
+1. Scrapes jobs using the URL-based method (`page={n}&sort=0`).
+2. Saves raw data to `job_trends.csv`.
+3. Analyzes the DataFrame for:
+   - Total job count.
+   - Top 5 job titles and regions.
+   - Salary availability stats.
+   - Urgent job count.
+4. Outputs results to console and `job_trends_summary.txt`.
+
+This step showcases my proficiency in data manipulation and analysis, rounding out the project for a resume.
