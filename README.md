@@ -20,3 +20,13 @@ As a Python developer, I created this project to demonstrate my web scraping and
 5. Install a WebDriver (e.g., ChromeDriver) for Selenium—details in Step 2.
 
 More features and implementation details to follow as the project evolves!
+
+## Implementation: Step 2 - Core Scraper Finalized
+After testing, I finalized the scraper to work with my local setup (Windows, ChromeDriver at `chromedriver-win64/chromedriver.exe`). The script now reliably extracts job data from `jobvision.ir/jobs`, handling cases where fields like salary are missing.
+
+### Why This Approach?
+- **Portability:** I used `os.path.join` for the ChromeDriver path, making the script adaptable across systems.
+- **Real-World Testing:** The output (e.g., "کارشناس حسابداری مالی" from "شرکت درمان یاب پخش مهر آریا") confirms the scraper’s accuracy with live data.
+
+### Setup Note
+- Place `chromedriver-win64/chromedriver.exe` in the project folder or update the `driver_path` variable to your ChromeDriver location.
